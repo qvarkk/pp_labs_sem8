@@ -2,55 +2,55 @@
 #include <stdio.h>
 #include <time.h>
 
-#define N 15000
+#define MATRIX_SIZE 15000
 
-int matrix[N][N];
+int matrix[MATRIX_SIZE][MATRIX_SIZE];
 
 void fill_zero_matrix_by_rows() {
   int i, j;
 
-  for (i = 0; i < N; i++)
-    for (j = 0; j < N; j++)
+  for (i = 0; i < MATRIX_SIZE; i++)
+    for (j = 0; j < MATRIX_SIZE; j++)
       matrix[i][j] = 0; 
 }
 
 void fill_zero_matrix_by_columns() {
   int i, j;
 
-  for (i = 0; i < N; i++)
-    for (j = 0; j < N; j++)
+  for (i = 0; i < MATRIX_SIZE; i++)
+    for (j = 0; j < MATRIX_SIZE; j++)
       matrix[j][i] = 0; 
 }
 
 void fill_ordered_matrix_by_rows() {
   int i, j, k = 1;
 
-  for (i = 0; i < N; i++)
-    for (j = 0; j < N; j++)
+  for (i = 0; i < MATRIX_SIZE; i++)
+    for (j = 0; j < MATRIX_SIZE; j++)
       matrix[i][j] = k++; 
 }
 
 void fill_ordered_matrix_by_columns() {
   int i, j, k = 1;
 
-  for (i = 0; i < N; i++)
-    for (j = 0; j < N; j++)
+  for (i = 0; i < MATRIX_SIZE; i++)
+    for (j = 0; j < MATRIX_SIZE; j++)
       matrix[j][i] = k++; 
 }
 
 void fill_rand_matrix_by_rows() {
   int i, j;
 
-  for (i = 0; i < N; i++)
-    for (j = 0; j < N; j++)
+  for (i = 0; i < MATRIX_SIZE; i++)
+    for (j = 0; j < MATRIX_SIZE; j++)
       matrix[i][j] = rand(); 
 }
 
 void fill_rand_matrix_by_columns() {
   int i, j;
 
-  for (i = 0; i < N; i++)
-    for (j = 0; j < N; j++)
+  for (i = 0; i < MATRIX_SIZE; i++)
+    for (j = 0; j < MATRIX_SIZE; j++)
       matrix[j][i] = rand(); 
 }
 
@@ -68,7 +68,7 @@ void output_function_runtime(void (*function)(), char* function_name) {
 int main() {
   srand(time(NULL));
 
-  printf("Matrix size: %d\n", N);
+  printf("Matrix size: %d\n", MATRIX_SIZE);
 
   output_function_runtime(fill_zero_matrix_by_rows, "initial fill_zero_matrix_by_rows");
 
