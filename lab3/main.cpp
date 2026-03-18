@@ -140,17 +140,10 @@ int Calc_blk(double** u, double** f, int N, double eps, double& time)
 			icnt++;
 			max = 0;
 			
-			// здесь реализация: циклы по блокам, в них по элементам
-			for (int wave = 0; wave < 2 * bcnt - 1; wave++)
+			for (int ib = 0; ib < bcnt; ib++)
 			{
-				int start_i = (wave < bcnt) ? 0 : wave - bcnt + 1;
-				int end_i = (wave < bcnt) ? wave : bcnt - 1;
-				
-				for (int ib = start_i; ib <= end_i; ib++)
+				for (int jb = 0; jb < bcnt; jb++)
 				{
-					int jb = wave - ib;
-					
-					
 					for (int i = ib * BlockSize + 1; i <= (ib + 1) * BlockSize; i++)
 					{
 						for (int j = jb * BlockSize + 1; j <= (jb + 1) * BlockSize; j++)

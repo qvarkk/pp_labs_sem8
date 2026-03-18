@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -fopenmp -O0
+CFLAGS = -fopenmp -O2
 
 all: exec
 
