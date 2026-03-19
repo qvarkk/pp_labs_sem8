@@ -13,6 +13,7 @@ using namespace std;
 // Функции решения уравнения (результаты всех версий должны быть идентичны!)
 int Calc_ser(double** u, double** f, int N, double eps, double& time);  // последовательная
 int Calc_par_block(double** u, double** f, int N, double eps, double& time); // параллельная блочная
+int Calc_par_block1(double** u, double** f, int N, double eps, double& time); // параллельная блочная
 
 // Инициализация массивов
 void Init(double **u, double **f, int N);
@@ -26,7 +27,7 @@ bool CompareResults(double** u1, double** u2, int N, double tolerance = 1e-10);
 
 int main(int argc, char **argv)
 {
-	double **f=NULL, **u_blk_par=NULL, **u_ser=NULL;
+	double **f=NULL, **u_blk_par=NULL, **u_blk=NULL, **u_ser=NULL;
 	
 	const int N = 600;        // Количество точек сетки по каждой размерности
 	const double eps = 0.0001;   // Точность вычислений
@@ -35,6 +36,7 @@ int main(int argc, char **argv)
 	
 	f = new_arr(N);      // Выделение памяти под правую часть значений уравнения
 	u_blk_par = new_arr(N + 2);
+	u_blk = new_arr(N + 2);
 	u_ser = new_arr(N + 2);
 	
 	//	 Последовательная реализация
@@ -45,6 +47,20 @@ int main(int argc, char **argv)
 	cout << "Iterations =    " << icnt << endl;
 	cout << "Results:\n";
 	Output(u_ser, N);                   // Вывод результатов на экран
+
+	// Параллельная блочная реализация
+	cout << "\n\t*** Parallel block version 1 ***\n";
+	Init(u_blk, f, N);                  // Инициализация краевых условий и правой части
+	icnt = Calc_par_block1(u_blk, f, N, eps, stime);  // Вызов параллельной блочной функции расчета
+	cout << "Solution time = " << stime << " seconds" << endl;
+	cout << "Iterations =    " << icnt << endl;
+	cout << "Results:\n";
+	Output(u_blk, N);
+    
+	if (CompareResults(u_ser, u_blk, N))
+			cout << "Parallel block 1 matches serial!\n";
+	else
+			cout << "Parallel block 1 DOES NOT match serial!\n";
 
 		// Параллельная блочная реализация
 	cout << "\n\t*** Parallel block version ***\n";
@@ -63,6 +79,7 @@ int main(int argc, char **argv)
   // Освобождение памяти массивов
   delete_arr(f, N);
   delete_arr(u_blk_par, N + 2);
+  delete_arr(u_blk, N + 2);
 	delete_arr(u_ser, N + 2);
   
 	return 0;
@@ -98,6 +115,65 @@ int Calc_ser(double** u, double** f, int N, double eps, double& time)
 	}
   while (max > eps);
 
+	time = omp_get_wtime() - start_time;
+	return icnt;
+}
+
+// Параллельная реализия блочного алгоритма Гаусса-Зейделя
+int Calc_par_block1(double** u, double** f, int N, double eps, double& time)
+{
+	double max;
+	double h = 1.0 / (N + 1);
+	int icnt = 0;
+
+	const int BlockSize = 20;  // Размер блока
+	int bcnt;                  // Количество блоков в ряд
+
+	double start_time = omp_get_wtime();
+
+	if (N % BlockSize == 0) // Если количество точек по каждому из направлений сетки делится нацело на размер блока, то проводятся вычисления
+	{
+		bcnt = N / BlockSize;
+		// а сколько блоков в волне?
+		do
+		{
+			icnt++;
+			max = 0;
+
+			// здесь реализация
+			for (int wave = 0; wave < 2 * bcnt - 1; wave++) 
+			{
+				int start_i = (wave < bcnt) ? 0 : wave - bcnt + 1;
+				int end_i = (wave < bcnt) ? wave : bcnt - 1;
+			
+				#pragma omp parallel for reduction(max:max) schedule(dynamic)
+				for (int ib = start_i; ib <= end_i; ib++)
+				{
+					int jb = wave - ib;
+					
+					for (int i = ib * BlockSize + 1; i <= (ib + 1) * BlockSize; i++)
+					{
+						for (int j = jb * BlockSize + 1; j <= (jb + 1) * BlockSize; j++)
+						{
+							double u0 = u[i][j];
+							u[i][j] = 0.25 * (u[i - 1][j] + u[i + 1][j] + u[i][j - 1] + u[i][j + 1] - h * h * f[i - 1][j - 1]);
+							double d = fabs(u[i][j] - u0);
+							if (d > max)
+								max = d;
+						}
+					}
+				}
+			}
+		}
+    while (max > eps);
+	}
+	else
+	{
+		cout << "Error!!! N must be divisible by BlockSize" << endl;
+		time = 0;
+		return 0;
+	}
+	
 	time = omp_get_wtime() - start_time;
 	return icnt;
 }
@@ -255,7 +331,7 @@ void Output(double** u, int N)
 	cout << endl;
 }
 
-bool CompareResults(double** u1, double** u2, int N, double tolerance)
+bool CompareResults(double** u1, double** u2, int N, double tolerance = 0.001)
 {
 	double max_diff = 0;
 	for (int i = 1; i <= N; i++)
